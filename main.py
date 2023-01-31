@@ -4,9 +4,11 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.types import ParseMode, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.utils import executor
 from aiogram import Bot, Dispatcher, executor, types
-from config import TOKEN_API, CONTACTS_TEXT, INFO_TEXT, START_TEXT, HELP_COMMAND
+from config import TOKEN_API, CONTACTS_TEXT, INFO_TEXT, START_TEXT, HELP_COMMAND, MSG_NAME, MSG_PHONE_NUMBER, SENDER_ID, SUCCESS_MSG
 from keyboards import get_kb_start, get_kb_contacts
+from aiogram.dispatcher.filters.state import State
 from form import Order
 
 logging.basicConfig(level=logging.INFO)
@@ -57,7 +59,7 @@ async def help_command(message: types.Message):
 @dp.message_handler(commands='order')
 async def cmd_start(message: types.Message):
     await Order.fullname.set()
-    await message.reply("Hi there! What's your name?")
+    await message.reply(MSG_NAME)
 
 
 @dp.message_handler(state='*', commands='cancel')
@@ -79,7 +81,7 @@ async def process_name(message: types.Message, state: FSMContext):
     markup_request = ReplyKeyboardMarkup(resize_keyboard=True).add(
     KeyboardButton('Отправить свой контакт ☎️', request_contact=True)
     )
-    await message.reply("Phone number?", reply_markup=markup_request)
+    await message.reply(MSG_PHONE_NUMBER, reply_markup=markup_request)
 
 
 @dp.message_handler(content_types=types.ContentType.CONTACT, state=Order.phone_number)
@@ -90,13 +92,13 @@ async def process_gender(message: types.Message, state: FSMContext):
         markup = types.ReplyKeyboardRemove()
         await bot.send_message(
             message.chat.id,
-            'Успешно',
+            SUCCESS_MSG,
             reply_markup=markup,
             parse_mode=ParseMode.MARKDOWN,
         )
-        await bot.send_message('710921551', text=md.text(
-                md.text('Hi! Nice to meet you,', md.bold(data['fullname'])),
-                md.text('phonenumber:', md.code(data['phone_number'])),
+        await bot.send_message(SENDER_ID, text=md.text(
+                md.text('Новый заказ, имя:', md.bold(data['fullname'])),
+                md.text('номер телефона:', md.code(data['phone_number'])),
                 sep='\n'))
         await state.finish()
 
